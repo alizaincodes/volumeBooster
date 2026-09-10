@@ -47,6 +47,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -81,6 +82,7 @@ fun DiagnosticsScreen(
     val logs by LogBus.entries.collectAsState()
     val listState = rememberLazyListState()
     val clipboardManager = LocalClipboardManager.current
+    val scope = rememberCoroutineScope()
     var selectedCategory by remember { mutableStateOf<LogCategory?>(null) }
     var warningsOnly by remember { mutableStateOf(false) }
     var autoScroll by remember { mutableStateOf(true) }
@@ -95,7 +97,7 @@ fun DiagnosticsScreen(
 
     LaunchedEffect(filteredLogs.size) {
         if (autoScroll && filteredLogs.isNotEmpty()) {
-            listState.scrollToItem(filteredLogs.lastIndex)
+            listState.animateScrollToItem(filteredLogs.lastIndex)
         }
     }
 
@@ -210,7 +212,7 @@ fun DiagnosticsScreen(
                     Button(
                         onClick = {
                             autoScroll = true
-                            listState.scrollToItem(filteredLogs.lastIndex)
+                            scope.launch { listState.scrollToItem(filteredLogs.lastIndex) }
                         },
                         modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 16.dp)
                     ) {

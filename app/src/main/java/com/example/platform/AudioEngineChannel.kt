@@ -2,8 +2,6 @@ package com.example.platform
 
 import android.content.Context
 import com.example.VolumeBoostApplication
-import com.example.audio.ActiveSessionInfo
-import com.example.audio.AudioEngineState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -48,10 +46,9 @@ class AudioEngineChannel(private val context: Context) {
                 engineManager.setMasterEnabled(enabled)
                 result(true)
             }
-            "setAppBoost" -> {
-                val packageName = arguments?.get("packageName") as? String ?: ""
+            "setGlobalBoost" -> {
                 val boostPercent = (arguments?.get("boostPercent") as? Number)?.toInt() ?: 100
-                engineManager.updateBoostForPackage(packageName, boostPercent)
+                engineManager.setGlobalBoostPercent(boostPercent)
                 result(true)
             }
             "resetAllBoosts" -> {
@@ -72,7 +69,9 @@ class AudioEngineChannel(private val context: Context) {
                         "engineStatus" to state.engineStatus,
                         "isHeadphonesConnected" to state.isHeadphonesConnected,
                         "headphoneName" to state.headphoneName,
-                        "activeBoostCount" to state.activeBoostCount
+                        "activeBoostCount" to state.activeBoostCount,
+                        "currentBoostPercent" to state.currentBoostPercent,
+                        "globalEffectAttached" to state.globalEffectAttached
                     )
                 )
             }
@@ -90,6 +89,8 @@ class AudioEngineChannel(private val context: Context) {
                     "isHeadphonesConnected" to state.isHeadphonesConnected,
                     "headphoneName" to state.headphoneName,
                     "activeBoostCount" to state.activeBoostCount,
+                    "currentBoostPercent" to state.currentBoostPercent,
+                    "globalEffectAttached" to state.globalEffectAttached,
                     "activeSessionPackage" to state.activeSession?.packageName,
                     "activeSessionName" to state.activeSession?.appName,
                     "activeSessionBoost" to state.activeSession?.boostPercent

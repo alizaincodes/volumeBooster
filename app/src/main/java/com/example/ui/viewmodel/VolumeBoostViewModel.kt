@@ -11,7 +11,6 @@ import android.provider.Settings
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.VolumeBoostApplication
-import com.example.audio.ActiveSessionInfo
 import com.example.audio.AudioEngineState
 import com.example.data.model.AppProfile
 import com.example.service.AudioEngineService
@@ -169,47 +168,8 @@ class VolumeBoostViewModel(application: Application) : AndroidViewModel(applicat
         _pendingHeadphoneConfirm.value = null
     }
 
-    fun toggleAppEnabled(packageName: String, enabled: Boolean) {
-        viewModelScope.launch(Dispatchers.IO) {
-            appProfileRepo.updateEnabled(packageName, enabled)
-            if (!enabled) {
-                audioEngineManager.updateBoostForPackage(packageName, 100)
-            } else {
-                val profile = appProfileRepo.getProfile(packageName)
-                if (profile != null) {
-                    audioEngineManager.updateBoostForPackage(packageName, profile.boostPercent)
-                }
-            }
-        }
-    }
-
-    fun resetAppToNormal(packageName: String) {
-        audioEngineManager.updateBoostForPackage(packageName, 100)
-    }
-
-    fun deleteProfile(packageName: String) {
-        viewModelScope.launch(Dispatchers.IO) {
-            appProfileRepo.deleteProfile(packageName)
-            audioEngineManager.updateBoostForPackage(packageName, 100)
-            loadInstalledApps()
-        }
-    }
-
     fun resetAllBoostsToSafe() {
         audioEngineManager.resetAllBoostsToSafe()
-    }
-
-    fun addAppProfile(packageName: String, appName: String, boostPercent: Int) {
-        viewModelScope.launch(Dispatchers.IO) {
-            val profile = AppProfile(
-                packageName = packageName,
-                appName = appName,
-                boostPercent = boostPercent,
-                isEnabled = true
-            )
-            appProfileRepo.saveProfile(profile)
-            loadInstalledApps()
-        }
     }
 
     fun setThemeMode(mode: String) {

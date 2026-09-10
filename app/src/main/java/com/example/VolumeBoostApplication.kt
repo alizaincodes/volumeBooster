@@ -31,7 +31,6 @@ class VolumeBoostApplication : Application() {
         settingsRepository = SettingsRepository(this)
         audioEngineManager = AudioEngineManager.getInstance(
             this,
-            appProfileRepository,
             settingsRepository
         )
 
