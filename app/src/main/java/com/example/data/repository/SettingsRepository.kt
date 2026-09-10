@@ -29,6 +29,9 @@ class SettingsRepository(context: Context) {
     private val _resumeOnBootFlow = MutableStateFlow(prefs.getBoolean(KEY_RESUME_ON_BOOT, false))
     val resumeOnBootFlow: StateFlow<Boolean> = _resumeOnBootFlow.asStateFlow()
 
+    private val _globalBoostPercentFlow = MutableStateFlow(prefs.getInt(KEY_GLOBAL_BOOST, 100))
+    val globalBoostPercentFlow: StateFlow<Int> = _globalBoostPercentFlow.asStateFlow()
+
     var isMasterEnabled: Boolean
         get() = prefs.getBoolean(KEY_MASTER_ENABLED, false)
         set(value) {
@@ -36,10 +39,24 @@ class SettingsRepository(context: Context) {
             _masterEnabledFlow.value = value
         }
 
-    var defaultBoostPercent: Int
-        get() = prefs.getInt(KEY_DEFAULT_BOOST, 100)
+    var isBoostEnabled: Boolean
+        get() = isMasterEnabled
         set(value) {
-            prefs.edit().putInt(KEY_DEFAULT_BOOST, value.coerceIn(0, 300)).apply()
+            isMasterEnabled = value
+        }
+
+    var globalBoostPercent: Int
+        get() = prefs.getInt(KEY_GLOBAL_BOOST, 100).coerceIn(0, 300)
+        set(value) {
+            val clamped = value.coerceIn(0, 300)
+            prefs.edit().putInt(KEY_GLOBAL_BOOST, clamped).apply()
+            _globalBoostPercentFlow.value = clamped
+        }
+
+    var defaultBoostPercent: Int
+        get() = globalBoostPercent
+        set(value) {
+            globalBoostPercent = value
         }
 
     var themeMode: String
@@ -88,6 +105,7 @@ class SettingsRepository(context: Context) {
     companion object {
         private const val KEY_MASTER_ENABLED = "master_enabled"
         private const val KEY_DEFAULT_BOOST = "default_boost_percent"
+        private const val KEY_GLOBAL_BOOST = "global_boost_percent"
         private const val KEY_THEME_MODE = "theme_mode"
         private const val KEY_DYNAMIC_COLOR = "dynamic_color"
         private const val KEY_HAPTICS_ENABLED = "haptics_enabled"

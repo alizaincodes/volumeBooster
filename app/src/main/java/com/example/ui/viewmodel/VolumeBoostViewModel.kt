@@ -52,6 +52,7 @@ class VolumeBoostViewModel(application: Application) : AndroidViewModel(applicat
     val engineState: StateFlow<AudioEngineState> = audioEngineManager.engineState
 
     val masterEnabled: StateFlow<Boolean> = settingsRepo.masterEnabledFlow
+    val globalBoostPercent: StateFlow<Int> = settingsRepo.globalBoostPercentFlow
     val themeMode: StateFlow<String> = settingsRepo.themeModeFlow
     val dynamicColor: StateFlow<Boolean> = settingsRepo.dynamicColorFlow
     val hapticsEnabled: StateFlow<Boolean> = settingsRepo.hapticsFlow
@@ -130,16 +131,26 @@ class VolumeBoostViewModel(application: Application) : AndroidViewModel(applicat
     }
 
     fun requestBoostChange(packageName: String, appName: String, targetPercent: Int) {
-        if (targetPercent > 150 && audioEngineManager.isHeadphonesConnected() && !settingsRepo.headphoneWarningBypassedForSession) {
+        val finalTarget = targetPercent.coerceIn(0, 300)
+        if (finalTarget > 150 && audioEngineManager.isHeadphonesConnected() && !settingsRepo.headphoneWarningBypassedForSession) {
             _pendingHeadphoneConfirm.value = PendingHeadphoneConfirmation(
                 packageName = packageName,
                 appName = appName,
-                targetPercent = targetPercent,
+                targetPercent = finalTarget,
                 isMasterSwitch = false
             )
         } else {
-            audioEngineManager.updateBoostForPackage(packageName, targetPercent)
+            audioEngineManager.updateGlobalBoost(finalTarget)
         }
+    }
+
+    fun setGlobalBoostPercent(targetPercent: Int) {
+        val clamped = targetPercent.coerceIn(0, 300)
+        audioEngineManager.setGlobalBoostPercent(clamped)
+    }
+
+    fun runDiagnosticsCheck() {
+        audioEngineManager.runDiagnosticCheck()
     }
 
     fun confirmHeadphoneSafety() {
@@ -150,7 +161,7 @@ class VolumeBoostViewModel(application: Application) : AndroidViewModel(applicat
         if (pending.isMasterSwitch) {
             executeMasterToggle(true)
         } else {
-            audioEngineManager.updateBoostForPackage(pending.packageName, pending.targetPercent)
+            audioEngineManager.updateGlobalBoost(pending.targetPercent)
         }
     }
 

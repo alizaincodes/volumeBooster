@@ -78,6 +78,7 @@ fun SettingsScreen(
     onResumeOnBootChange: (Boolean) -> Unit,
     onRequestBatteryOpt: () -> Unit,
     onResetAllBoosts: () -> Unit,
+    onNavigateToDiagnostics: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     var showThemeDialog by remember { mutableStateOf(false) }
@@ -291,6 +292,13 @@ fun SettingsScreen(
                         title = "How Volume Boost Works",
                         subtitle = "Learn why we don't need microphone access and how sessions work",
                         onClick = { showHowItWorksSheet = true }
+                    )
+
+                    SettingsTile(
+                        icon = Icons.Default.Info,
+                        title = "Diagnostics",
+                        subtitle = "Live engine logs, permissions, and support checks",
+                        onClick = onNavigateToDiagnostics
                     )
 
                     SettingsTile(

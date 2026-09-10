@@ -15,6 +15,8 @@ import androidx.core.app.ServiceCompat
 import com.example.MainActivity
 import com.example.R
 import com.example.VolumeBoostApplication
+import com.example.logging.AppLog
+import com.example.logging.LogCategory
 
 class AudioEngineService : Service() {
 
@@ -50,8 +52,10 @@ class AudioEngineService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        AppLog.i(LogCategory.ENGINE, "AudioEngineService starting")
         when (intent?.action) {
             ACTION_STOP -> {
+                AppLog.i(LogCategory.ENGINE, "AudioEngineService stopping")
                 stopForeground(STOP_FOREGROUND_REMOVE)
                 stopSelf()
                 return START_NOT_STICKY
@@ -66,15 +70,21 @@ class AudioEngineService : Service() {
     private fun startForegroundWithNotification() {
         val notification = buildNotification("Volume Boost is active — tap to manage")
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            ServiceCompat.startForeground(
-                this,
-                NOTIFICATION_ID,
-                notification,
-                ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK
-            )
-        } else {
-            startForeground(NOTIFICATION_ID, notification)
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                ServiceCompat.startForeground(
+                    this,
+                    NOTIFICATION_ID,
+                    notification,
+                    ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK
+                )
+            } else {
+                startForeground(NOTIFICATION_ID, notification)
+            }
+            AppLog.success(LogCategory.ENGINE, "Foreground service entered started state successfully")
+        } catch (e: Throwable) {
+            AppLog.e(LogCategory.ENGINE, "Foreground service start failed: ${e.message}")
+            throw e
         }
     }
 

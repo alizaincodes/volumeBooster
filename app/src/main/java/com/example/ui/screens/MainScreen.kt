@@ -51,7 +51,7 @@ import com.example.ui.theme.AmberWarning
 import com.example.ui.viewmodel.VolumeBoostViewModel
 
 enum class MainNavigationTab {
-    HOME, DISCOVER, SETTINGS
+    HOME, SETTINGS
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -61,16 +61,15 @@ fun MainScreen(
 ) {
     val context = LocalContext.current
     val hasSeenOnboarding by viewModel.hasSeenOnboarding.collectAsState()
-    val profiles by viewModel.profiles.collectAsState()
     val engineState by viewModel.engineState.collectAsState()
     val masterEnabled by viewModel.masterEnabled.collectAsState()
+    val globalBoostPercent by viewModel.globalBoostPercent.collectAsState()
     val themeMode by viewModel.themeMode.collectAsState()
     val dynamicColor by viewModel.dynamicColor.collectAsState()
     val hapticsEnabled by viewModel.hapticsEnabled.collectAsState()
     val resumeOnBoot by viewModel.resumeOnBoot.collectAsState()
-    val installedApps by viewModel.installedApps.collectAsState()
-    val isLoadingApps by viewModel.isLoadingApps.collectAsState()
     val pendingHeadphoneConfirm by viewModel.pendingHeadphoneConfirm.collectAsState()
+    var showDiagnostics by rememberSaveable { mutableStateOf(false) }
 
     var currentTab by rememberSaveable { mutableIntStateOf(MainNavigationTab.HOME.ordinal) }
 
@@ -147,22 +146,6 @@ fun MainScreen(
                 )
 
                 NavigationBarItem(
-                    selected = currentTab == MainNavigationTab.DISCOVER.ordinal,
-                    onClick = { currentTab = MainNavigationTab.DISCOVER.ordinal },
-                    icon = {
-                        Icon(
-                            imageVector = if (currentTab == MainNavigationTab.DISCOVER.ordinal) Icons.Filled.Explore else Icons.Outlined.Explore,
-                            contentDescription = "Discover"
-                        )
-                    },
-                    label = { Text("Discover") },
-                    colors = NavigationBarItemDefaults.colors(
-                        indicatorColor = MaterialTheme.colorScheme.primaryContainer,
-                        selectedIconColor = MaterialTheme.colorScheme.onPrimaryContainer
-                    )
-                )
-
-                NavigationBarItem(
                     selected = currentTab == MainNavigationTab.SETTINGS.ordinal,
                     onClick = { currentTab = MainNavigationTab.SETTINGS.ordinal },
                     icon = {
@@ -185,32 +168,14 @@ fun MainScreen(
                 when (tabIndex) {
                     MainNavigationTab.HOME.ordinal -> {
                         HomeScreen(
-                            profiles = profiles,
                             engineState = engineState,
                             masterEnabled = masterEnabled,
+                            globalBoostPercent = globalBoostPercent,
                             hapticsEnabled = hapticsEnabled,
                             onToggleMaster = { viewModel.toggleMaster(it) },
-                            onBoostChange = { pkg, name, boost ->
-                                viewModel.requestBoostChange(pkg, name, boost)
-                            },
-                            onToggleAppEnabled = { pkg, enabled ->
-                                viewModel.toggleAppEnabled(pkg, enabled)
-                            },
-                            onResetApp = { viewModel.resetAppToNormal(it) },
-                            onDeleteProfile = { viewModel.deleteProfile(it) },
-                            onNavigateToDiscover = { currentTab = MainNavigationTab.DISCOVER.ordinal },
+                            onBoostChange = { boost -> viewModel.setGlobalBoostPercent(boost) },
+                            onNavigateToDiagnostics = { showDiagnostics = true },
                             onDismissHeadphoneBanner = { viewModel.dismissHeadphoneDisconnectedBanner() }
-                        )
-                    }
-                    MainNavigationTab.DISCOVER.ordinal -> {
-                        DiscoverScreen(
-                            installedApps = installedApps,
-                            boostedProfiles = profiles,
-                            isLoading = isLoadingApps,
-                            hapticsEnabled = hapticsEnabled,
-                            onAddProfile = { pkg, name, boost ->
-                                viewModel.addAppProfile(pkg, name, boost)
-                            }
                         )
                     }
                     MainNavigationTab.SETTINGS.ordinal -> {
@@ -226,7 +191,8 @@ fun MainScreen(
                             onHapticsChange = { viewModel.setHapticsEnabled(it) },
                             onResumeOnBootChange = { viewModel.setResumeOnBoot(it) },
                             onRequestBatteryOpt = { viewModel.requestIgnoreBatteryOptimizations(context) },
-                            onResetAllBoosts = { viewModel.resetAllBoostsToSafe() }
+                            onResetAllBoosts = { viewModel.resetAllBoostsToSafe() },
+                            onNavigateToDiagnostics = { showDiagnostics = true }
                         )
                     }
                 }
@@ -241,6 +207,14 @@ fun MainScreen(
                 deviceDescription = engineState.headphoneName,
                 onDismiss = { viewModel.dismissHeadphoneSafety() },
                 onConfirmed = { viewModel.confirmHeadphoneSafety() }
+            )
+        }
+
+        if (showDiagnostics) {
+            DiagnosticsScreen(
+                engineState = engineState,
+                onBack = { showDiagnostics = false },
+                onRunDiagnosticCheck = { viewModel.runDiagnosticsCheck() }
             )
         }
     }

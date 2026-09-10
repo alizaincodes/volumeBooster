@@ -50,6 +50,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -76,16 +77,13 @@ import com.example.ui.theme.RiskRed
 
 @Composable
 fun HomeScreen(
-    profiles: List<AppProfile>,
     engineState: AudioEngineState,
     masterEnabled: Boolean,
+    globalBoostPercent: Int,
     hapticsEnabled: Boolean,
     onToggleMaster: (Boolean) -> Unit,
-    onBoostChange: (packageName: String, appName: String, boostPercent: Int) -> Unit,
-    onToggleAppEnabled: (packageName: String, isEnabled: Boolean) -> Unit,
-    onResetApp: (packageName: String) -> Unit,
-    onDeleteProfile: (packageName: String) -> Unit,
-    onNavigateToDiscover: () -> Unit,
+    onBoostChange: (Int) -> Unit,
+    onNavigateToDiagnostics: () -> Unit,
     onDismissHeadphoneBanner: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -95,7 +93,6 @@ fun HomeScreen(
             contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 96.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Headphone Disconnected Safe Clamp Notification Banner
             item(key = "headphone_banner") {
                 AnimatedVisibility(
                     visible = engineState.headphoneDisconnectedBanner != null,
@@ -137,98 +134,30 @@ fun HomeScreen(
                 }
             }
 
-            // Master Boost Switch Card (Section 6.4)
             item(key = "master_card") {
                 MasterBoostCard(
                     masterEnabled = masterEnabled,
+                    boostPercent = globalBoostPercent,
                     engineStatus = engineState.engineStatus,
-                    onToggleMaster = onToggleMaster
+                    onToggleMaster = onToggleMaster,
+                    onBoostChange = onBoostChange,
+                    onNavigateToDiagnostics = onNavigateToDiagnostics,
+                    unsupportedDevice = engineState.unsupportedDeviceBanner
                 )
             }
-
-            // Live Now-Boosting Card (Section 6.4)
-            item(key = "now_boosting_card") {
-                AnimatedVisibility(
-                    visible = engineState.activeSession != null && masterEnabled,
-                    enter = expandVertically() + fadeIn(),
-                    exit = shrinkVertically() + fadeOut()
-                ) {
-                    engineState.activeSession?.let { session ->
-                        NowBoostingCard(session = session)
-                    }
-                }
-            }
-
-            // Section Header
-            item(key = "section_header") {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 8.dp, bottom = 4.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "App Boost Profiles",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    Text(
-                        text = "${profiles.size} configured",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-
-            // Per-App Boost Cards or Empty State
-            if (profiles.isEmpty()) {
-                item(key = "empty_state") {
-                    EmptyAppsCard(onNavigateToDiscover = onNavigateToDiscover)
-                }
-            } else {
-                items(
-                    items = profiles,
-                    key = { it.packageName }
-                ) { profile ->
-                    AppBoostCard(
-                        profile = profile,
-                        hapticsEnabled = hapticsEnabled,
-                        onBoostChange = { newPercent ->
-                            onBoostChange(profile.packageName, profile.appName, newPercent)
-                        },
-                        onToggleEnabled = { isEnabled ->
-                            onToggleAppEnabled(profile.packageName, isEnabled)
-                        },
-                        onResetToNormal = { onResetApp(profile.packageName) },
-                        onDelete = { onDeleteProfile(profile.packageName) }
-                    )
-                }
-            }
         }
-
-        // Extended Floating Action Button (+ Add App)
-        ExtendedFloatingActionButton(
-            text = { Text("+ Add App", fontWeight = FontWeight.Bold) },
-            icon = { Icon(Icons.Default.Add, contentDescription = null) },
-            onClick = onNavigateToDiscover,
-            shape = RoundedCornerShape(24.dp),
-            containerColor = MaterialTheme.colorScheme.primary,
-            contentColor = Color.White,
-            modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(24.dp)
-                .testTag("add_app_fab")
-        )
     }
 }
 
 @Composable
 private fun MasterBoostCard(
     masterEnabled: Boolean,
+    boostPercent: Int,
     engineStatus: String,
-    onToggleMaster: (Boolean) -> Unit
+    onToggleMaster: (Boolean) -> Unit,
+    onBoostChange: (Int) -> Unit,
+    onNavigateToDiagnostics: () -> Unit,
+    unsupportedDevice: String?
 ) {
     val backgroundColor by animateColorAsState(
         targetValue = if (masterEnabled) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant,
@@ -236,7 +165,7 @@ private fun MasterBoostCard(
     )
 
     Card(
-        shape = RoundedCornerShape(28.dp), // Expressive 28dp radius
+        shape = RoundedCornerShape(28.dp),
         colors = CardDefaults.cardColors(containerColor = backgroundColor),
         elevation = CardDefaults.cardElevation(defaultElevation = if (masterEnabled) 3.dp else 1.dp),
         modifier = Modifier
@@ -279,7 +208,7 @@ private fun MasterBoostCard(
 
                     Column {
                         Text(
-                            text = if (masterEnabled) "Boosting Active" else "Boosting Paused",
+                            text = if (masterEnabled) "Master Boost Enabled" else "Boosting Paused",
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurface
@@ -304,28 +233,48 @@ private fun MasterBoostCard(
                 )
             }
 
-            Spacer(modifier = Modifier.height(14.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
-            // Soundwave Visualizer bar
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(14.dp))
-                    .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.5f))
-                    .padding(horizontal = 16.dp, vertical = 10.dp),
+                modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.Bottom
             ) {
                 Text(
-                    text = if (masterEnabled) "Audio Engine Live (0% CPU Idle)" else "Engine Inactive",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    text = "$boostPercent%",
+                    style = MaterialTheme.typography.displaySmall,
+                    fontWeight = FontWeight.Black,
+                    color = MaterialTheme.colorScheme.onSurface
                 )
-                SoundwaveVisualizer(
-                    isActive = masterEnabled,
-                    primaryColor = MaterialTheme.colorScheme.primary,
-                    accentColor = AmberWarning
-                )
+                TextButton(onClick = onNavigateToDiagnostics) {
+                    Text("🐛 View logs")
+                }
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+            ExpressiveSlider(
+                value = boostPercent,
+                onValueChange = onBoostChange,
+                enabled = masterEnabled,
+                hapticsEnabled = true
+            )
+
+            if (unsupportedDevice != null) {
+                Spacer(modifier = Modifier.height(12.dp))
+                Surface(
+                    color = RiskRed.copy(alpha = 0.12f),
+                    shape = RoundedCornerShape(12.dp),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, RiskRed.copy(alpha = 0.25f)),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        text = unsupportedDevice,
+                        modifier = Modifier.padding(12.dp),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = RiskRed,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
             }
         }
     }

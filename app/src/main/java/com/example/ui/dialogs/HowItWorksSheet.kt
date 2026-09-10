@@ -68,8 +68,8 @@ fun HowItWorksSheet(
 
             InfoCard(
                 icon = Icons.Default.GraphicEq,
-                title = "Per-Active-App Architecture",
-                body = "Android naturally allows one app's sound to play through your output at a time in most real-world scenarios. Volume Boost remembers each app's customized setting and instantly applies it the moment that specific app plays sound."
+                title = "Single Global Boost",
+                body = "Volume Boost applies one master level to all audio coming out of your phone's speaker or connected audio output. It doesn't need to track individual apps or chase session IDs in real time."
             )
 
             InfoCard(
