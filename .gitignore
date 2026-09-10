@@ -1,0 +1,55 @@
+*.iml
+.gradle
+.kotlin
+/local.properties
+/.idea/caches
+/.idea/libraries
+/.idea/modules.xml
+/.idea/workspace.xml
+/.idea/navEditor.xml
+/.idea/assetWizardSettings.xml
+.DS_Store
+/build
+/captures
+.externalNativeBuild
+.cxx
+local.properties
+.env
+debug.keystore
+# Gradle
+.gradle/
+build/
+app/build/
+*/build/
+gradle-app.setting
+!gradle-wrapper.jar
+.gradletasknamecache
+
+# Local config
+local.properties
+*.iml
+.idea/
+*.hprof
+
+# Keystore / signing (NEVER commit these)
+*.jks
+*.keystore
+key.properties
+
+# Android Studio captures
+captures/
+.externalNativeBuild/
+.cxx/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Leftover Flutter scaffolding (unused by the Gradle build, keep out of VCS noise)
+# Remove these two lines if you actually intend to keep/use the lib/ Flutter code
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies

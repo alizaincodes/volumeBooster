@@ -1,0 +1,6 @@
+{
+  "name": "Volume Boost",
+  "description": "Per-app volume boosting utility up to 300% with hearing safety protection and Material 3 Expressive UI.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
